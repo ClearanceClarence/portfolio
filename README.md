@@ -1,2 +1,0 @@
-# cc-portfolio
-my portfolio

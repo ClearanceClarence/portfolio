@@ -1,0 +1,3122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ADRIAN — Full-Stack Developer / SYS.0xA1</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        /* dark backgrounds, three layers of depth */
+        --bg: #0a0c0d;
+        --bg-2: #0f1214;
+        --panel: #14181b;
+        --panel-2: #1a1f23;
+
+        /* hairlines */
+        --line: #2a3138;
+        --line-bright: #3a4550;
+
+        /* type */
+        --ink: #e8ece8;
+        --ink-dim: #8a948f;
+        --ink-faint: #525a55;
+
+        /* signal — orange is the only loud color in this palette, use sparingly */
+        --signal: #ff5f1f;
+        --signal-2: #ffae5c;
+
+        /* secondary accents — status states + a warm */
+        --cyan: #5ee0d2;
+        --amber: #f5d76e;
+        --red: #ff3b30;
+        --green: #4ade80;
+
+        --grid: rgba(94, 224, 210, 0.06);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Geist", sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+        overflow-x: hidden;
+        cursor: crosshair;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* grain + grid backdrop */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(var(--grid) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+        background-size: 48px 48px;
+        pointer-events: none;
+        z-index: 1;
+        /* fade out toward edges so the grid doesn't fight the chrome */
+        mask-image: radial-gradient(
+          ellipse at center,
+          black 30%,
+          transparent 80%
+        );
+      }
+
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+        opacity: 0.06;
+        pointer-events: none;
+        z-index: 2;
+        mix-blend-mode: overlay;
+      }
+
+      /* Scanline */
+      .scanline {
+        position: fixed;
+        left: 0;
+        right: 0;
+        height: 2px;
+        /* signal-orange sweep with a falloff so the ends don't look hard-cut */
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--signal) 20%,
+          var(--signal-2) 50%,
+          var(--signal) 80%,
+          transparent
+        );
+        opacity: 0.5;
+        z-index: 3;
+        pointer-events: none;
+        animation: scan 8s linear infinite;
+        box-shadow: 0 0 20px var(--signal);
+      }
+
+      @keyframes scan {
+        0% {
+          top: -2%;
+        }
+        100% {
+          top: 102%;
+        }
+      }
+
+      /* hud chrome — corner brackets, scanline, top-strip readouts */
+      .hud {
+        position: fixed;
+        z-index: 100;
+        font-family: "Geist Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.15em;
+        color: var(--ink-dim);
+        pointer-events: none;
+        text-transform: uppercase;
+      }
+      .hud-tl {
+        top: 16px;
+        left: 16px;
+      }
+      .hud-tr {
+        top: 16px;
+        right: 16px;
+        text-align: right;
+      }
+      .hud-bl {
+        bottom: 16px;
+        left: 16px;
+      }
+      .hud-br {
+        bottom: 16px;
+        right: 16px;
+        text-align: right;
+      }
+
+      .hud .pulse {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        background: var(--green);
+        border-radius: 50%;
+        margin-right: 6px;
+        vertical-align: middle;
+        box-shadow: 0 0 8px var(--green);
+        animation: pulse 1.4s ease-in-out infinite;
+      }
+      .hud .pulse.warn {
+        background: var(--signal);
+        box-shadow: 0 0 8px var(--signal);
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      /* Corner brackets */
+      .corner {
+        position: fixed;
+        width: 18px;
+        height: 18px;
+        border: 1px solid var(--signal);
+        z-index: 99;
+        pointer-events: none;
+      }
+      .corner.tl {
+        top: 12px;
+        left: 12px;
+        border-right: none;
+        border-bottom: none;
+      }
+      .corner.tr {
+        top: 12px;
+        right: 12px;
+        border-left: none;
+        border-bottom: none;
+      }
+      .corner.bl {
+        bottom: 12px;
+        left: 12px;
+        border-right: none;
+        border-top: none;
+      }
+      .corner.br {
+        bottom: 12px;
+        right: 12px;
+        border-left: none;
+        border-top: none;
+      }
+
+      /* side nav */
+      nav {
+        position: fixed;
+        top: 50%;
+        right: 32px;
+        transform: translateY(-50%);
+        z-index: 50;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      nav a {
+        color: var(--ink-faint);
+        text-decoration: none;
+        font-family: "Geist Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        position: relative;
+        padding-right: 22px;
+        transition: color 0.3s;
+        text-align: right;
+      }
+
+      nav a::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        top: 50%;
+        width: 12px;
+        height: 1px;
+        background: var(--ink-faint);
+        transition:
+          width 0.3s,
+          background 0.3s;
+      }
+
+      nav a:hover,
+      nav a.active {
+        color: var(--signal);
+      }
+      nav a:hover::after,
+      nav a.active::after {
+        width: 18px;
+        background: var(--signal);
+      }
+
+      /* hero */
+      section {
+        position: relative;
+        min-height: 100vh;
+        padding: 80px 64px;
+        z-index: 10;
+        max-width: 1440px;
+        margin: 0 auto;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 64px;
+        align-items: center;
+      }
+
+      .hero-left {
+        position: relative;
+      }
+
+      .eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-family: "Geist Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: var(--ink-dim);
+        margin-bottom: 32px;
+      }
+
+      .eyebrow::before {
+        content: "";
+        width: 32px;
+        height: 1px;
+        background: var(--signal);
+      }
+
+      h1 {
+        font-family: "Geist", sans-serif;
+        font-weight: 600;
+        font-size: clamp(56px, 9vw, 144px);
+        line-height: 0.9;
+        letter-spacing: -0.045em;
+        color: var(--ink);
+        margin-bottom: 24px;
+      }
+
+      h1 .glitch {
+        display: inline-block;
+        position: relative;
+        color: var(--signal);
+      }
+
+      h1 .glitch::before,
+      h1 .glitch::after {
+        content: attr(data-text);
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        opacity: 0.8;
+      }
+
+      h1 .glitch::before {
+        color: var(--cyan);
+        animation: glitch1 3s infinite;
+        clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+      }
+      h1 .glitch::after {
+        color: var(--signal);
+        animation: glitch2 3s infinite;
+        clip-path: polygon(0 60%, 100% 60%, 100% 100%, 0 100%);
+      }
+
+      @keyframes glitch1 {
+        0%,
+        90%,
+        100% {
+          transform: translate(0);
+        }
+        92% {
+          transform: translate(-2px, 1px);
+        }
+        94% {
+          transform: translate(2px, -1px);
+        }
+        96% {
+          transform: translate(-1px, 1px);
+        }
+      }
+      @keyframes glitch2 {
+        0%,
+        90%,
+        100% {
+          transform: translate(0);
+        }
+        92% {
+          transform: translate(2px, -1px);
+        }
+        94% {
+          transform: translate(-2px, 1px);
+        }
+        96% {
+          transform: translate(1px, -1px);
+        }
+      }
+
+      .tagline {
+        font-family: "Instrument Serif", serif;
+        font-style: italic;
+        font-size: clamp(22px, 2.4vw, 30px);
+        color: var(--ink-dim);
+        line-height: 1.4;
+        margin-bottom: 40px;
+        max-width: 560px;
+        letter-spacing: -0.005em;
+      }
+
+      .tagline em {
+        color: var(--signal-2);
+        font-style: normal;
+        font-family: "Geist Mono", monospace;
+        font-size: 0.65em;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        border: 1px solid var(--signal);
+        padding: 2px 8px;
+        margin: 0 4px;
+      }
+
+      .cta-row {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 22px;
+        background: transparent;
+        border: 1px solid var(--line-bright);
+        color: var(--ink);
+        font-family: "Geist Mono", monospace;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        text-decoration: none;
+        cursor: crosshair;
+        position: relative;
+        overflow: hidden;
+        transition: color 0.3s;
+      }
+
+      .btn::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: var(--signal);
+        transform: translateX(-101%);
+        transition: transform 0.4s cubic-bezier(0.7, 0, 0.3, 1);
+        z-index: -1;
+      }
+
+      .btn:hover {
+        color: var(--bg);
+        border-color: var(--signal);
+      }
+      .btn:hover::before {
+        transform: translateX(0);
+      }
+
+      .btn.primary {
+        border-color: var(--signal);
+        color: var(--signal);
+      }
+      .btn.primary::before {
+        background: var(--signal);
+      }
+      .btn.primary:hover {
+        color: var(--bg);
+      }
+
+      .btn .arrow {
+        font-family: "Geist Mono", monospace;
+        transform: translateX(0);
+        transition: transform 0.3s;
+      }
+      .btn:hover .arrow {
+        transform: translateX(4px);
+      }
+
+      /* hero right side — terminal panel + telemetry strip */
+      .hero-right {
+        position: relative;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        position: relative;
+      }
+
+      .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--line);
+        font-family: "Geist Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        color: var(--ink-dim);
+        text-transform: uppercase;
+        background: var(--bg-2);
+      }
+
+      .panel-header .id {
+        color: var(--signal);
+      }
+      .panel-header .dots {
+        display: flex;
+        gap: 6px;
+      }
+      .panel-header .dots span {
+        width: 8px;
+        height: 8px;
+        border: 1px solid var(--line-bright);
+        border-radius: 50%;
+      }
+      .panel-header .dots span.on {
+        background: var(--green);
+        border-color: var(--green);
+        box-shadow: 0 0 6px var(--green);
+      }
+
+      .terminal {
+        padding: 24px;
+        font-family: "Geist Mono", monospace;
+        font-size: 12px;
+        line-height: 1.85;
+        min-height: 380px;
+      }
+
+      .terminal .prompt {
+        color: var(--cyan);
+      }
+      .terminal .out {
+        color: var(--ink-dim);
+      }
+      .terminal .key {
+        color: var(--signal);
+      }
+      .terminal .str {
+        color: var(--amber);
+      }
+      .terminal .com {
+        color: var(--ink-faint);
+        font-style: italic;
+      }
+
+      .cursor {
+        display: inline-block;
+        width: 8px;
+        height: 14px;
+        background: var(--signal);
+        vertical-align: middle;
+        margin-left: 4px;
+        animation: blink 1s steps(2) infinite;
+      }
+
+      @keyframes blink {
+        50% {
+          opacity: 0;
+        }
+      }
+
+      /* Telemetry strip */
+      .telemetry {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1px;
+        background: var(--line);
+        border: 1px solid var(--line);
+        margin-top: 16px;
+      }
+
+      .tel-cell {
+        background: var(--panel);
+        padding: 14px;
+        position: relative;
+      }
+
+      .tel-cell .lbl {
+        font-family: "Geist Mono", monospace;
+        font-size: 9px;
+        letter-spacing: 0.2em;
+        color: var(--ink-faint);
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+
+      .tel-cell .val {
+        font-family: "Geist", sans-serif;
+        font-weight: 600;
+        font-size: 28px;
+        letter-spacing: -0.03em;
+        color: var(--signal);
+      }
+
+      .tel-cell .sub {
+        font-family: "Geist Mono", monospace;
+        font-size: 9px;
+        color: var(--ink-dim);
+        margin-top: 4px;
+        letter-spacing: 0.1em;
+      }
+
+      /* section heads */
+      .sec-head {
+        display: flex;
+        align-items: baseline;
+        gap: 24px;
+        margin-bottom: 56px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .sec-head .num {
+        font-family: "Geist Mono", monospace;
+        font-size: 12px;
+        color: var(--signal);
+        letter-spacing: 0.1em;
+      }
+
+      .sec-head h2 {
+        font-family: "Geist", sans-serif;
+        font-weight: 600;
+        font-size: 44px;
+        letter-spacing: -0.035em;
+        text-transform: lowercase;
+        color: var(--ink);
+      }
+
+      .sec-head .meta {
+        margin-left: auto;
+        font-family: "Geist Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        color: var(--ink-faint);
+        text-transform: uppercase;
+      }
+
+      /* stack grid */
+      .stack-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 1px;
+        background: var(--line);
+        border: 1px solid var(--line);
+      }
+
+      .stack-cell {
+        background: var(--bg-2);
+        padding: 18px 16px;
+        position: relative;
+        transition: background 0.3s;
+        grid-column: span 3;
+      }
+
+      .stack-cell:hover {
+        background: var(--panel-2);
+      }
+
+      .stack-cell:hover .stack-name {
+        color: var(--signal);
+      }
+
+      .stack-cell.feature {
+        grid-column: span 6;
+      }
+      .stack-cell.tall {
+        grid-row: span 2;
+      }
+
+      .stack-cell .corner-mark {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        font-family: "Geist Mono", monospace;
+        font-size: 9px;
+        color: var(--ink-faint);
+        letter-spacing: 0.1em;
+      }
+
+      .stack-name {
+        font-family: "Geist", sans-serif;
+        font-weight: 500;
+        font-size: 22px;
+        letter-spacing: -0.02em;
+        margin: 8px 0 4px;
+        transition: color 0.3s;
+      }
+
+      .stack-cell .stack-meta {
+        font-family: "Geist Mono", monospace;
+        font-size: 9px;
+        letter-spacing: 0.15em;
+        color: var(--ink-faint);
+        text-transform: uppercase;
+      }
+
+      .stack-cell .stack-bar {
+        margin-top: 14px;
+        height: 2px;
+        background: var(--line);
+        position: relative;
+        overflow: hidden;
+      }
+      .stack-cell .stack-bar::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        width: var(--lvl, 80%);
+        background: linear-gradient(90deg, var(--signal), var(--signal-2));
+      }
+
+      /* wp section — featured, gets its own layout */
+      .wp-wrap {
+        display: grid;
+        grid-template-columns: 1.1fr 1.4fr;
+        gap: 1px;
+        background: var(--line);
+        border: 1px solid var(--line);
+      }
+
+      .wp-anchor {
+        background: linear-gradient(135deg, var(--panel) 0%, var(--bg-2) 100%);
+        padding: 48px 40px;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 460px;
+      }
+
+      .wp-anchor::before {
+        content: "WP";
+        position: absolute;
+        top: -40px;
+        right: -20px;
+        font-family: "Geist", sans-serif;
+        font-weight: 800;
+        font-size: 360px;
+        letter-spacing: -0.06em;
+        color: var(--signal);
+        opacity: 0.05;
+        line-height: 0.8;
+        pointer-events: none;
+      }
+
+      .wp-anchor::after {
+        content: "";
+        position: absolute;
+        top: 24px;
+        left: 24px;
+        width: 8px;
+        height: 8px;
+        background: var(--signal);
+        border-radius: 50%;
+        box-shadow: 0 0 12px var(--signal);
+        animation: pulse 1.6s ease-in-out infinite;
+      }
+
+      .wp-tag {
+        font-family: "Geist Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.22em;
+        color: var(--signal);
+        text-transform: uppercase;
+        margin-bottom: 16px;
+        padding-left: 24px;
+      }
+
+      .wp-anchor h3 {
+        font-family: "Geist", sans-serif;
+        font-weight: 600;
+        font-size: clamp(36px, 4.5vw, 56px);
+        letter-spacing: -0.04em;
+        line-height: 0.95;
+        text-transform: lowercase;
+        color: var(--ink);
+        margin-bottom: 24px;
+        position: relative;
+      }
+
+      .wp-anchor h3 em {
+        font-family: "Instrument Serif", serif;
+        font-weight: 400;
+        font-style: italic;
+        letter-spacing: -0.01em;
+        color: var(--signal-2);
+      }
+
+      .wp-blurb {
+        font-family: "Instrument Serif", serif;
+        font-style: italic;
+        font-size: 19px;
+        line-height: 1.5;
+        color: var(--ink-dim);
+        margin-bottom: 32px;
+        max-width: 380px;
+        position: relative;
+      }
+
+      .wp-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1px;
+        background: var(--line);
+        border: 1px solid var(--line);
+        position: relative;
+      }
+
+      .wp-stat {
+        background: var(--bg);
+        padding: 14px 16px;
+      }
+
+      .wp-stat .lbl {
+        font-family: "Geist Mono", monospace;
+        font-size: 9px;
+        letter-spacing: 0.2em;
+        color: var(--ink-faint);
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+
+      .wp-stat .val {
+        font-family: "Geist", sans-serif;
+        font-weight: 600;
+        font-size: 22px;
+        letter-spacing: -0.02em;
+        color: var(--signal);
+      }
+
+      /* Capabilities list */
+      .wp-caps {
+        background: var(--bg-2);
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1px;
+      }
+
+      .wp-cap {
+        background: var(--bg-2);
+        padding: 22px 22px 22px 22px;
+        border-bottom: 1px solid var(--line);
+        border-right: 1px solid var(--line);
+        position: relative;
+        transition: background 0.3s;
+        cursor: crosshair;
+      }
+
+      .wp-cap:nth-child(2n) {
+        border-right: none;
+      }
+      .wp-cap:nth-last-child(-n + 2) {
+        border-bottom: none;
+      }
+
+      .wp-cap:hover {
+        background: var(--panel);
+      }
+      .wp-cap:hover .wp-cap-name {
+        color: var(--signal);
+      }
+      .wp-cap:hover .wp-cap-mark {
+        color: var(--signal);
+        border-color: var(--signal);
+      }
+
+      .wp-cap-mark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border: 1px solid var(--line-bright);
+        font-family: "Geist Mono", monospace;
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--ink-dim);
+        margin-bottom: 12px;
+        letter-spacing: 0;
+        transition:
+          color 0.3s,
+          border-color 0.3s;
+      }
+
+      .wp-cap-name {
+        font-family: "Geist", sans-serif;
+        font-weight: 500;
+        font-size: 16px;
+        letter-spacing: -0.015em;
+        color: var(--ink);
+        margin-bottom: 6px;
+        transition: color 0.3s;
+      }
+
+      .wp-cap-desc {
+        font-family: "Geist", sans-serif;
+        font-size: 12px;
+        line-height: 1.55;
+        color: var(--ink-dim);
+      }
+
+      /* stack groups (web/mods/tools) */
+      .stack-group {
+        margin-bottom: 48px;
+      }
+      .stack-group:last-child {
+        margin-bottom: 0;
+      }
+
+      .group-head {
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px dashed var(--line);
+      }
+      .group-head .gnum {
+        font-family: "Geist Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.15em;
+        color: var(--signal);
+      }
+      .group-head .gname {
+        font-family: "Geist", sans-serif;
+        font-weight: 500;
+        font-size: 18px;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+      }
+      .group-head .gdesc {
+        font-family: "Instrument Serif", serif;
+        font-style: italic;
+        font-size: 14px;
+        color: var(--ink-dim);
+        margin-left: auto;
+        text-align: right;
+      }
+
+      /* project tabs */
+      .tab-bar {
+        display: flex;
+        gap: 0;
+        margin-bottom: 32px;
+        border-bottom: 1px solid var(--line);
+        position: relative;
+        flex-wrap: wrap;
+      }
+
+      .tab-btn {
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--ink-faint);
+        font-family: "Geist Mono", monospace;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        padding: 14px 22px;
+        cursor: crosshair;
+        transition:
+          color 0.3s,
+          border-color 0.3s;
+        position: relative;
+        margin-bottom: -1px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .tab-btn:hover {
+        color: var(--ink-dim);
+      }
+
+      .tab-btn.active {
+        color: var(--signal);
+        border-bottom-color: var(--signal);
+      }
+
+      .tab-btn .tab-count {
+        font-size: 9px;
+        color: var(--ink-faint);
+        border: 1px solid var(--line-bright);
+        padding: 1px 6px;
+        letter-spacing: 0.05em;
+      }
+
+      .tab-btn.active .tab-count {
+        color: var(--signal);
+        border-color: var(--signal);
+      }
+
+      .tab-panel {
+        display: none;
+        animation: tabFade 0.4s ease-out;
+      }
+      .tab-panel.active {
+        display: grid;
+      }
+
+      @keyframes tabFade {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Status legend */
+      .status-legend {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 24px;
+        padding: 12px 16px;
+        background: var(--bg-2);
+        border: 1px solid var(--line);
+      }
+
+      .status-legend .legend-label {
+        font-family: "Geist Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        color: var(--ink-faint);
+        text-transform: uppercase;
+        margin-right: 4px;
+      }
+
+      .status-legend .legend-text {
+        font-family: "Instrument Serif", serif;
+        font-style: italic;
+        font-size: 13px;
+        color: var(--ink-dim);
+        margin-right: 12px;
+      }
+
+      /* project cards */
+      .projects {
+        grid-template-columns: 1fr 1fr;
+        gap: 1px;
+        background: var(--line);
+        border: 1px solid var(--line);
+      }
+
+      .project {
+        background: var(--bg-2);
+        position: relative;
+        cursor: crosshair;
+        transition: background 0.4s;
+        overflow: hidden;
+        min-height: 360px;
+        display: flex;
+        flex-direction: column;
+        text-decoration: none;
+        color: inherit;
+      }
+
+      /* Top accent line that animates on hover */
+      .project::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: var(--signal);
+        transition: width 0.6s cubic-bezier(0.7, 0, 0.3, 1);
+        z-index: 4;
+      }
+
+      .project:hover {
+        background: var(--panel);
+      }
+      .project:hover::before {
+        width: 100%;
+      }
+      .project:hover .project-title {
+        color: var(--signal);
+      }
+      .project:hover .project-body::after {
+        transform: translateX(0);
+        opacity: 1;
+      }
+
+      /* Status banner styling for in-dev / archived */
+      .project[data-status="dev"] {
+        background: linear-gradient(
+          180deg,
+          var(--bg-2) 0%,
+          rgba(245, 215, 110, 0.04) 100%
+        );
+      }
+      .project[data-status="dev"]:hover {
+        background: linear-gradient(
+          180deg,
+          var(--panel) 0%,
+          rgba(245, 215, 110, 0.06) 100%
+        );
+      }
+      .project[data-status="archive"] {
+        opacity: 0.78;
+      }
+
+      /* Card header: ID + status badge */
+      .project-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 28px;
+        border-bottom: 1px solid var(--line);
+        background: var(--bg);
+        position: relative;
+        z-index: 2;
+      }
+
+      .project-id {
+        font-family: "Geist Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        color: var(--ink-faint);
+        text-transform: uppercase;
+      }
+
+      .project-id .yr {
+        color: var(--ink-dim);
+      }
+
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: "Geist Mono", monospace;
+        font-size: 9px;
+        font-weight: 500;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border: 1px solid;
+        position: relative;
+      }
+
+      .status-badge .led {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        position: relative;
+      }
+
+      /* LIVE — green */
+      .status-badge[data-state="live"] {
+        color: var(--green);
+        border-color: var(--green);
+        background: rgba(74, 222, 128, 0.06);
+      }
+      .status-badge[data-state="live"] .led {
+        background: var(--green);
+        box-shadow: 0 0 8px var(--green);
+      }
+
+      /* IN DEV — amber, animated */
+      .status-badge[data-state="dev"] {
+        color: var(--amber);
+        border-color: var(--amber);
+        background: rgba(245, 215, 110, 0.06);
+      }
+      .status-badge[data-state="dev"] .led {
+        background: var(--amber);
+        animation: ledBlink 1.2s ease-in-out infinite;
+      }
+      .status-badge[data-state="dev"]::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border: 1px solid var(--amber);
+        opacity: 0;
+        animation: badgePulse 2s ease-in-out infinite;
+        pointer-events: none;
+      }
+
+      @keyframes ledBlink {
+        0%,
+        100% {
+          opacity: 1;
+          box-shadow: 0 0 10px var(--amber);
+        }
+        50% {
+          opacity: 0.4;
+          box-shadow: 0 0 4px var(--amber);
+        }
+      }
+      @keyframes badgePulse {
+        0% {
+          transform: scale(1);
+          opacity: 0.4;
+        }
+        100% {
+          transform: scale(1.15);
+          opacity: 0;
+        }
+      }
+
+      /* ARCHIVED — muted */
+      .status-badge[data-state="archive"] {
+        color: var(--ink-faint);
+        border-color: var(--line-bright);
+        background: transparent;
+      }
+      .status-badge[data-state="archive"] .led {
+        background: var(--ink-faint);
+      }
+
+      /* Card body */
+      .project-body {
+        padding: 28px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+
+      /* Subtle arrow that slides in on hover */
+      .project-body::after {
+        content: "→";
+        position: absolute;
+        top: 28px;
+        right: 28px;
+        font-family: "Geist Mono", monospace;
+        font-size: 14px;
+        color: var(--signal);
+        opacity: 0;
+        transform: translateX(-8px);
+        transition:
+          transform 0.4s,
+          opacity 0.4s;
+      }
+
+      .project-title {
+        font-family: "Geist", sans-serif;
+        font-weight: 600;
+        font-size: 32px;
+        letter-spacing: -0.035em;
+        margin-bottom: 4px;
+        transition: color 0.3s;
+        line-height: 1.05;
+      }
+
+      .project-sub {
+        font-family: "Instrument Serif", serif;
+        font-style: italic;
+        font-size: 18px;
+        color: var(--ink-dim);
+        margin-bottom: 20px;
+        line-height: 1.3;
+      }
+
+      .project-desc {
+        font-family: "Geist", sans-serif;
+        font-size: 13px;
+        color: var(--ink-dim);
+        line-height: 1.65;
+        margin-bottom: 20px;
+      }
+
+      /* In-dev specific: progress indicator */
+      .dev-progress {
+        margin-bottom: 16px;
+        padding: 10px 12px;
+        background: rgba(245, 215, 110, 0.04);
+        border-left: 2px solid var(--amber);
+        font-family: "Geist Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        color: var(--amber);
+        text-transform: uppercase;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .dev-progress .pct {
+        font-family: "Geist", sans-serif;
+        font-weight: 600;
+        font-size: 12px;
+        letter-spacing: -0.01em;
+      }
+
+      .project-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: auto;
+        padding-top: 16px;
+        border-top: 1px dashed var(--line);
+      }
+
+      .tag {
+        font-family: "Geist Mono", monospace;
+        font-size: 9px;
+        letter-spacing: 0.12em;
+        color: var(--ink-dim);
+        text-transform: uppercase;
+        padding: 3px 8px;
+        border: 1px solid var(--line-bright);
+      }
+
+      .tag.hl {
+        color: var(--signal);
+        border-color: var(--signal);
+      }
+
+      /* dossier (about) */
+      .about-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.5fr;
+        gap: 64px;
+        align-items: start;
+      }
+
+      .about-left .panel {
+        padding: 0;
+      }
+
+      .id-card {
+        padding: 24px;
+      }
+
+      .id-card h3 {
+        font-family: "Geist Mono", monospace;
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--signal);
+        margin-bottom: 16px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      .id-card dl {
+        display: grid;
+        grid-template-columns: 100px 1fr;
+        gap: 10px 16px;
+        font-size: 12px;
+      }
+
+      .id-card dt {
+        font-family: "Geist Mono", monospace;
+        font-size: 10px;
+        color: var(--ink-faint);
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+      }
+
+      .id-card dd {
+        font-family: "Geist", sans-serif;
+        color: var(--ink);
+      }
+      .id-card dd .pulse {
+        width: 6px;
+        height: 6px;
+        display: inline-block;
+        background: var(--green);
+        border-radius: 50%;
+        margin-right: 6px;
+        box-shadow: 0 0 6px var(--green);
+        animation: pulse 1.4s infinite;
+      }
+
+      .about-right p {
+        font-family: "Instrument Serif", serif;
+        font-size: 24px;
+        line-height: 1.45;
+        color: var(--ink);
+        margin-bottom: 24px;
+        letter-spacing: -0.005em;
+      }
+
+      .about-right .sig {
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
+        font-family: "Geist Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        color: var(--ink-faint);
+        text-transform: uppercase;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      /* dossier extended — timeline, principles, env */
+      .dossier-extended {
+        margin-top: 80px;
+        padding-top: 64px;
+        border-top: 1px dashed var(--line);
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 48px;
+        align-items: start;
+      }
+
+      .dossier-rightcol {
+        display: flex;
+        flex-direction: column;
+        justify-content: left;
+        gap: 48px;
+      }
+
+      .dossier-block-head {
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+        margin-bottom: 28px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .dossier-block-head .dnum {
+        font-family: "Geist Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        color: var(--signal);
+        text-transform: uppercase;
+      }
+
+      .dossier-block-head .dname {
+        font-family: "Geist", sans-serif;
+        font-weight: 600;
+        font-size: 22px;
+        letter-spacing: -0.025em;
+        text-transform: lowercase;
+        color: var(--ink);
+      }
+
+      .dossier-block-head .dmeta {
+        margin-left: auto;
+        font-family: "Geist Mono", monospace;
+        font-size: 9px;
+        letter-spacing: 0.18em;
+        color: var(--ink-faint);
+        text-transform: uppercase;
+      }
+
+      /* Timeline */
+      .timeline {
+        position: relative;
+        padding-left: 28px;
+      }
+
+      .timeline::before {
+        content: "";
+        position: absolute;
+        left: 6px;
+        top: 8px;
+        bottom: 8px;
+        width: 1px;
+        background: linear-gradient(
+          to bottom,
+          var(--signal) 0%,
+          var(--line) 100%
+        );
+      }
+
+      .timeline-item {
+        position: relative;
+        padding-bottom: 28px;
+      }
+
+      .timeline-item:last-child {
+        padding-bottom: 0;
+      }
+
+      .timeline-item::before {
+        content: "";
+        position: absolute;
+        left: -27px;
+        top: 6px;
+        width: 13px;
+        height: 13px;
+        border: 1px solid var(--signal);
+        background: var(--bg);
+      }
+
+      .timeline-item::after {
+        content: "";
+        position: absolute;
+        left: -23px;
+        top: 10px;
+        width: 5px;
+        height: 5px;
+        background: var(--signal);
+      }
+
+      .timeline-item.muted::before {
+        border-color: var(--line-bright);
+      }
+      .timeline-item.muted::after {
+        background: var(--ink-faint);
+      }
+
+      .timeline-period {
+        font-family: "Geist Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        color: var(--ink-faint);
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+
+      .timeline-role {
+        font-family: "Geist", sans-serif;
+        font-weight: 600;
+        font-size: 16px;
+        letter-spacing: -0.015em;
+        color: var(--ink);
+        margin-bottom: 2px;
+      }
+
+      .timeline-context {
+        font-family: "Instrument Serif", serif;
+        font-style: italic;
+        font-size: 14px;
+        color: var(--signal-2);
+        margin-bottom: 6px;
+      }
+
+      .timeline-desc {
+        font-family: "Geist", sans-serif;
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--ink-dim);
+      }
+
+      /* Principles list */
+      .principles {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        background: var(--line);
+        border: 1px solid var(--line);
+      }
+
+      .principle {
+        background: var(--bg-2);
+        padding: 18px 20px;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 16px;
+        align-items: start;
+        transition: background 0.3s;
+      }
+
+      .principle:hover {
+        background: var(--panel);
+      }
+      .principle:hover .principle-num {
+        color: var(--signal);
+        border-color: var(--signal);
+      }
+
+      .principle-num {
+        font-family: "Geist Mono", monospace;
+        font-size: 10px;
+        font-weight: 500;
+        color: var(--ink-faint);
+        border: 1px solid var(--line-bright);
+        padding: 3px 7px;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+        transition:
+          color 0.3s,
+          border-color 0.3s;
+      }
+
+      .principle-text {
+        font-family: "Geist", sans-serif;
+        font-size: 13px;
+        line-height: 1.55;
+        color: var(--ink);
+      }
+
+      .principle-text strong {
+        font-weight: 600;
+        color: var(--ink);
+      }
+
+      .principle-text em {
+        font-family: "Instrument Serif", serif;
+        font-style: italic;
+        color: var(--ink-dim);
+        font-size: 14px;
+      }
+
+      /* Environment grid */
+      .env-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1px;
+        background: var(--line);
+        border: 1px solid var(--line);
+      }
+
+      .env-block {
+        background: var(--bg-2);
+        padding: 22px 24px;
+      }
+
+      .env-block .env-label {
+        font-family: "Geist Mono", monospace;
+        font-size: 9px;
+        letter-spacing: 0.22em;
+        color: var(--signal);
+        text-transform: uppercase;
+        margin-bottom: 14px;
+      }
+
+      .env-block .env-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .env-block .env-item {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        font-family: "Geist", sans-serif;
+        font-size: 13px;
+        color: var(--ink);
+      }
+
+      .env-block .env-item::before {
+        content: "›";
+        font-family: "Geist Mono", monospace;
+        color: var(--signal);
+        font-size: 12px;
+      }
+
+      .env-block .env-item .em {
+        color: var(--ink-faint);
+        font-family: "Geist Mono", monospace;
+        font-size: 11px;
+        margin-left: auto;
+        letter-spacing: 0.05em;
+      }
+
+      /* contact / open channel */
+      .contact-wrap {
+        text-align: center;
+        padding: 80px 0;
+        position: relative;
+      }
+
+      .contact-wrap::before,
+      .contact-wrap::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 1px;
+        background: var(--signal);
+      }
+      .contact-wrap::before {
+        top: 0;
+      }
+      .contact-wrap::after {
+        bottom: 0;
+      }
+
+      .contact-wrap .signal-text {
+        font-family: "Geist", sans-serif;
+        font-weight: 600;
+        font-size: clamp(44px, 7vw, 96px);
+        line-height: 1;
+        letter-spacing: -0.045em;
+        margin: 24px 0;
+        text-transform: lowercase;
+      }
+
+      .contact-wrap .signal-text a {
+        color: var(--ink);
+        text-decoration: none;
+        position: relative;
+        transition: color 0.3s;
+      }
+
+      .contact-wrap .signal-text a:hover {
+        color: var(--signal);
+      }
+
+      .contact-wrap .signal-text a::after {
+        content: "_";
+        color: var(--signal);
+        animation: blink 1.2s steps(2) infinite;
+      }
+
+      .contact-wrap .frequencies {
+        display: flex;
+        justify-content: center;
+        gap: 48px;
+        margin-top: 56px;
+        flex-wrap: wrap;
+      }
+
+      .freq {
+        text-align: left;
+        min-width: 140px;
+      }
+
+      .freq .lbl {
+        font-family: "Geist Mono", monospace;
+        font-size: 9px;
+        letter-spacing: 0.22em;
+        color: var(--ink-faint);
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+
+      .freq a {
+        font-family: "Geist", sans-serif;
+        font-weight: 500;
+        font-size: 16px;
+        color: var(--ink);
+        text-decoration: none;
+        transition: color 0.3s;
+        letter-spacing: -0.01em;
+      }
+
+      .freq a:hover {
+        color: var(--signal);
+      }
+
+      /* footer */
+      footer {
+        border-top: 1px solid var(--line);
+        position: relative;
+        z-index: 10;
+      }
+
+      .footer-inner {
+        padding: 40px 64px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: "Geist Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        color: var(--ink-faint);
+        text-transform: uppercase;
+        max-width: 1440px;
+        margin: 0 auto;
+      }
+
+      /* scroll reveal */
+      .reveal {
+        opacity: 0;
+        transform: translateY(24px);
+        transition:
+          opacity 0.8s,
+          transform 0.8s;
+      }
+      .reveal.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* responsive — mobile breakpoint */
+      /* one breakpoint is enough for now; tablet sizes mostly look fine on the desktop layout */
+      @media (max-width: 980px) {
+        section {
+          padding: 60px 24px;
+        }
+        .hero,
+        .about-grid {
+          grid-template-columns: 1fr;
+          gap: 40px;
+        }
+        .projects {
+          grid-template-columns: 1fr;
+        }
+        .stack-cell {
+          grid-column: span 6 !important;
+        }
+        .stack-cell.feature {
+          grid-column: span 12 !important;
+        }
+        nav {
+          display: none;
+        }
+        .footer-inner {
+          padding: 24px;
+          flex-direction: column;
+          gap: 8px;
+          text-align: center;
+        }
+        .telemetry {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .group-head {
+          flex-wrap: wrap;
+        }
+        .group-head .gdesc {
+          margin-left: 0;
+          flex-basis: 100%;
+          text-align: left;
+        }
+        .tab-btn {
+          padding: 12px 14px;
+          font-size: 10px;
+          letter-spacing: 0.12em;
+        }
+        .sec-head .meta {
+          display: none;
+        }
+        .wp-wrap {
+          grid-template-columns: 1fr;
+        }
+        .wp-anchor {
+          min-height: auto;
+          padding: 36px 28px;
+        }
+        .wp-anchor::before {
+          font-size: 220px;
+          top: -20px;
+        }
+        .wp-caps {
+          grid-template-columns: 1fr;
+        }
+        .wp-cap {
+          border-right: none !important;
+        }
+        .wp-cap:last-child {
+          border-bottom: none;
+        }
+        .project-head {
+          padding: 12px 20px;
+        }
+        .project-body {
+          padding: 22px 20px;
+        }
+        .project-title {
+          font-size: 26px;
+        }
+        .status-legend {
+          gap: 8px;
+          padding: 10px 12px;
+        }
+        .status-legend .legend-text {
+          font-size: 12px;
+          margin-right: 8px;
+        }
+        .dossier-extended {
+          grid-template-columns: 1fr;
+          gap: 40px;
+          margin-top: 56px;
+          padding-top: 40px;
+        }
+        .env-grid {
+          grid-template-columns: 1fr;
+        }
+        .env-item .em {
+          display: block;
+          margin-left: 0;
+          margin-top: 2px;
+        }
+        .env-item {
+          flex-wrap: wrap;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- chrome: corner brackets + scanline + hud strips. all fixed-position, sit above content -->
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+    <div class="scanline"></div>
+
+    <div class="hud hud-tl">
+      <div><span class="pulse"></span>SYS.0xA1 // ONLINE</div>
+      <div style="margin-top: 4px; color: var(--ink-faint)">
+        LAT 59.21°N · LON 9.61°E
+      </div>
+    </div>
+    <div class="hud hud-tr">
+      <div>SKIEN / NORGE</div>
+      <div style="margin-top: 4px" id="clock">--:--:-- OSLO</div>
+    </div>
+    <div class="hud hud-bl">
+      <div>BUILD 26.04 · STABLE</div>
+    </div>
+    <div class="hud hud-br">
+      <div><span class="pulse warn"></span>SIGNAL OPEN</div>
+    </div>
+
+    <!-- nav -->
+    <nav>
+      <a href="#index" class="active">00 / index</a>
+      <a href="#wordpress">01 / wordpress</a>
+      <a href="#stack">02 / stack</a>
+      <a href="#archive">03 / archive</a>
+      <a href="#dossier">04 / dossier</a>
+      <a href="#transmit">05 / transmit</a>
+    </nav>
+
+    <!-- hero -->
+    <section id="index" class="hero">
+      <div class="hero-left">
+        <div class="eyebrow">// dossier_0xA1 — full-stack operator</div>
+        <h1>
+          Adrian<br />
+          <span class="glitch" data-text="builds">builds</span><br />
+          systems_
+        </h1>
+        <p class="tagline">
+          Full-stack developer based in Skien. I build web platforms,
+          custom CMS infrastructure, game mods, and procedural
+          tools — code that does the work, not just looks busy.
+        </p>
+        <div class="cta-row">
+          <a href="#archive" class="btn primary"
+            >view archive <span class="arrow">→→</span></a
+          >
+          <a href="#transmit" class="btn">contact_</a>
+        </div>
+      </div>
+
+      <div class="hero-right">
+        <div class="panel">
+          <div class="panel-header">
+            <span><span class="id">∎</span> /sys/operator.json</span>
+            <span class="dots">
+              <span class="on"></span><span></span><span></span>
+            </span>
+          </div>
+          <div class="terminal">
+            <div>
+              <span class="com">// runtime profile — last sync 04.30.26</span>
+            </div>
+            <div>
+              <span class="prompt">$</span>
+              <span class="out">whoami --verbose</span>
+            </div>
+            <div style="padding-left: 16px">
+              <span class="key">name</span><span class="out">:</span>
+              <span class="str">"Adrian"</span><br />
+              <span class="key">role</span><span class="out">:</span>
+              <span class="str">"full_stack_dev"</span><br />
+              <span class="key">stack</span><span class="out">:</span> [<span
+                class="str"
+                >"PHP"</span
+              >, <span class="str">"JS"</span>,
+              <span class="str">"WordPress"</span>,
+              <span class="str">"C#"</span>]<br />
+              <span class="key">years</span><span class="out">:</span>
+              <span class="out">8+</span><br />
+              <span class="key">domains</span><span class="out">:</span> [<span
+                class="str"
+                >"web"</span
+              >, <span class="str">"cms"</span>,
+              <span class="str">"mods"</span>,
+              <span class="str">"tools"</span>]<br />
+              <span class="key">status</span><span class="out">:</span>
+              <span class="str">"seeking_employment"</span>
+            </div>
+            <div style="margin-top: 12px">
+              <span class="prompt">$</span>
+              <span class="out">cat manifest.txt</span>
+            </div>
+            <div style="padding-left: 16px" class="out">
+              modular over monolithic.<br />
+              shipping over speculation.<br />
+              procedural over prefab.
+            </div>
+            <div style="margin-top: 12px">
+              <span class="prompt">$</span>
+              <span class="out">listen --port 80</span
+              ><span class="cursor"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="telemetry">
+          <div class="tel-cell">
+            <div class="lbl">PROJECTS</div>
+            <div class="val" data-count="40">00</div>
+            <div class="sub">SHIPPED</div>
+          </div>
+          <div class="tel-cell">
+            <div class="lbl">YEARS</div>
+            <div class="val" data-count="10">00</div>
+            <div class="sub">FULL-STACK</div>
+          </div>
+          <div class="tel-cell">
+            <div class="lbl">MODS</div>
+            <div class="val" data-count="12">00</div>
+            <div class="sub">NEXUS / STEAM</div>
+          </div>
+          <div class="tel-cell">
+            <div class="lbl">TIMEZONE</div>
+            <div class="val">UTC+1</div>
+            <div class="sub">CET / CEST</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- wp -->
+    <section id="wordpress">
+      <div class="sec-head reveal">
+        <span class="num">// 01</span>
+        <h2>wordpress_specialty</h2>
+        <span class="meta">primary commercial skill</span>
+      </div>
+
+      <div class="wp-wrap reveal">
+        <div class="wp-anchor">
+          <div>
+            <div class="wp-tag">// core_competency</div>
+            <h3>i build wordpress<br /><em>like it's 2026</em></h3>
+            <p class="wp-blurb">
+              Theme architects, plugin engineers, block builders. Custom
+              Gutenberg & Elementor blocks. Headless when it makes sense,
+              classic when it doesn't.
+            </p>
+          </div>
+          <div class="wp-stats">
+            <div class="wp-stat">
+              <div class="lbl">Years</div>
+              <div class="val">10+</div>
+            </div>
+            <div class="wp-stat">
+              <div class="lbl">Sites Shipped</div>
+              <div class="val">25+</div>
+            </div>
+            <div class="wp-stat">
+              <div class="lbl">Custom Plugins</div>
+              <div class="val">15+</div>
+            </div>
+            <div class="wp-stat">
+              <div class="lbl">Frameworks</div>
+              <div class="val">ACF · WP CLI</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wp-caps">
+          <div class="wp-cap">
+            <div class="wp-cap-mark">01</div>
+            <div class="wp-cap-name">Custom Themes</div>
+            <div class="wp-cap-desc">
+              Built from scratch, not bloated starter kits. Block-ready,
+              performant, accessible markup.
+            </div>
+          </div>
+          <div class="wp-cap">
+            <div class="wp-cap-mark">02</div>
+            <div class="wp-cap-name">Custom Plugins</div>
+            <div class="wp-cap-desc">
+              Standalone functionality — not theme-bound. Settings APIs, REST
+              endpoints, CLI commands.
+            </div>
+          </div>
+          <div class="wp-cap">
+            <div class="wp-cap-mark">03</div>
+            <div class="wp-cap-name">ACF</div>
+            <div class="wp-cap-desc">
+              Advanced Custom Fields — flexible content layouts, repeaters,
+              options pages, blocks via ACF.
+            </div>
+          </div>
+          <div class="wp-cap">
+            <div class="wp-cap-mark">04</div>
+            <div class="wp-cap-name">Gutenberg Blocks</div>
+            <div class="wp-cap-desc">
+              Native React-based blocks. Server-rendered, dynamic, with proper
+              inspector controls.
+            </div>
+          </div>
+          <div class="wp-cap">
+            <div class="wp-cap-mark">05</div>
+            <div class="wp-cap-name">Elementor Widgets</div>
+            <div class="wp-cap-desc">
+              Custom widgets and dynamic tags. Hooked into Elementor's API, not
+              duct-taped on top.
+            </div>
+          </div>
+          <div class="wp-cap">
+            <div class="wp-cap-mark">06</div>
+            <div class="wp-cap-name">Custom Post Types</div>
+            <div class="wp-cap-desc">
+              CPTs, taxonomies, meta — wired into the admin UI like they shipped
+              with WordPress.
+            </div>
+          </div>
+          <div class="wp-cap">
+            <div class="wp-cap-mark">07</div>
+            <div class="wp-cap-name">REST API & Hooks</div>
+            <div class="wp-cap-desc">
+              Custom endpoints, action/filter authoring. Integrations with
+              external systems.
+            </div>
+          </div>
+          <div class="wp-cap">
+            <div class="wp-cap-mark">08</div>
+            <div class="wp-cap-name">WooCommerce</div>
+            <div class="wp-cap-desc">
+              Custom product types, payment gateways, checkout fields, order
+              workflows.
+            </div>
+          </div>
+          <div class="wp-cap">
+            <div class="wp-cap-mark">09</div>
+            <div class="wp-cap-name">Multisite & SSO</div>
+            <div class="wp-cap-desc">
+              Network admin, cross-site auth, single sign-on plugins for
+              org-wide deployments.
+            </div>
+          </div>
+          <div class="wp-cap">
+            <div class="wp-cap-mark">10</div>
+            <div class="wp-cap-name">Performance & Hardening</div>
+            <div class="wp-cap-desc">
+              Query tuning, object caching, asset pipelines. Security headers,
+              role auditing, lockdown.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- stack -->
+    <section id="stack">
+      <div class="sec-head reveal">
+        <span class="num">// 02</span>
+        <h2>technical_stack</h2>
+        <span class="meta">3 domains · 24 modules · all calibrated</span>
+      </div>
+
+      <!-- a: web & cms -->
+      <div class="stack-group reveal">
+        <div class="group-head">
+          <span class="gnum">A //</span>
+          <span class="gname">web &amp; cms</span>
+          <span class="gdesc">— production stacks for the day job</span>
+        </div>
+        <div class="stack-grid">
+          <div class="stack-cell feature">
+            <span class="corner-mark">A.01</span>
+            <div class="stack-meta">PRIMARY DOMAIN</div>
+            <div class="stack-name">PHP / JavaScript</div>
+            <div
+              class="stack-meta"
+              style="margin-top: 8px; color: var(--ink-dim)"
+            >
+              Vanilla JS preferred. Modular architecture. XAMPP-native
+              development.
+            </div>
+            <div class="stack-bar" style="--lvl: 96%"></div>
+          </div>
+          <div class="stack-cell feature">
+            <span class="corner-mark">A.02</span>
+            <div class="stack-meta">CUSTOM CMS</div>
+            <div class="stack-name">VoidForge / Headless</div>
+            <div
+              class="stack-meta"
+              style="margin-top: 8px; color: var(--ink-dim)"
+            >
+              When WordPress isn't the right tool — custom-built CMS, headless
+              setups, bespoke admin UIs.
+            </div>
+            <div class="stack-bar" style="--lvl: 88%"></div>
+          </div>
+
+          <div class="stack-cell">
+            <span class="corner-mark">A.03</span>
+            <div class="stack-meta">JS FRAMEWORK</div>
+            <div class="stack-name">Vue.js</div>
+            <div class="stack-bar" style="--lvl: 80%"></div>
+          </div>
+          <div class="stack-cell">
+            <span class="corner-mark">A.04</span>
+            <div class="stack-meta">JS FRAMEWORK</div>
+            <div class="stack-name">React</div>
+            <div class="stack-bar" style="--lvl: 75%"></div>
+          </div>
+          <div class="stack-cell">
+            <span class="corner-mark">A.05</span>
+            <div class="stack-meta">FRONTEND</div>
+            <div class="stack-name">HTML &amp; CSS</div>
+            <div class="stack-bar" style="--lvl: 95%"></div>
+          </div>
+          <div class="stack-cell">
+            <span class="corner-mark">A.06</span>
+            <div class="stack-meta">PREPROCESSOR</div>
+            <div class="stack-name">SASS / SCSS</div>
+            <div class="stack-bar" style="--lvl: 85%"></div>
+          </div>
+
+          <div class="stack-cell">
+            <span class="corner-mark">A.07</span>
+            <div class="stack-meta">CMS (SECONDARY)</div>
+            <div class="stack-name">Joomla</div>
+            <div class="stack-bar" style="--lvl: 72%"></div>
+          </div>
+          <div class="stack-cell">
+            <span class="corner-mark">A.08</span>
+            <div class="stack-meta">DATABASE</div>
+            <div class="stack-name">MySQL / MariaDB</div>
+            <div class="stack-bar" style="--lvl: 88%"></div>
+          </div>
+          <div class="stack-cell">
+            <span class="corner-mark">A.09</span>
+            <div class="stack-meta">VERSION CONTROL</div>
+            <div class="stack-name">Git · GitHub · GitLab</div>
+            <div class="stack-bar" style="--lvl: 92%"></div>
+          </div>
+          <div class="stack-cell">
+            <span class="corner-mark">A.10</span>
+            <div class="stack-meta">RUNTIME</div>
+            <div class="stack-name">XAMPP · NPM</div>
+            <div class="stack-bar" style="--lvl: 90%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- b: modding -->
+      <div class="stack-group reveal">
+        <div class="group-head">
+          <span class="gnum">B //</span>
+          <span class="gname">modding &amp; games</span>
+          <span class="gdesc">— under the handle "CC"</span>
+        </div>
+        <div class="stack-grid">
+          <div class="stack-cell feature">
+            <span class="corner-mark">B.01</span>
+            <div class="stack-meta">CYBERPUNK 2077</div>
+            <div class="stack-name">Redscript</div>
+            <div
+              class="stack-meta"
+              style="margin-top: 8px; color: var(--ink-dim)"
+            >
+              Compile-stable mods across game patches. AI &amp; UI hooks.
+              Published mods on Nexus.
+            </div>
+            <div class="stack-bar" style="--lvl: 82%"></div>
+          </div>
+          <div class="stack-cell feature">
+            <span class="corner-mark">B.02</span>
+            <div class="stack-meta">BANNERLORD / UNITY</div>
+            <div class="stack-name">C# / .NET</div>
+            <div
+              class="stack-meta"
+              style="margin-top: 8px; color: var(--ink-dim)"
+            >
+              Mount &amp; Blade II event frameworks. Gameplay scripting.
+              Procedural systems.
+            </div>
+            <div class="stack-bar" style="--lvl: 78%"></div>
+          </div>
+
+          <div class="stack-cell">
+            <span class="corner-mark">B.03</span>
+            <div class="stack-meta">BETHESDA</div>
+            <div class="stack-name">Skyrim · Fallout · Starfield</div>
+            <div class="stack-bar" style="--lvl: 80%"></div>
+          </div>
+          <div class="stack-cell">
+            <span class="corner-mark">B.04</span>
+            <div class="stack-meta">SHADERS</div>
+            <div class="stack-name">GLSL</div>
+            <div class="stack-bar" style="--lvl: 70%"></div>
+          </div>
+          <div class="stack-cell">
+            <span class="corner-mark">B.05</span>
+            <div class="stack-meta">ASSETS</div>
+            <div class="stack-name">Texture &amp; UI Design</div>
+            <div class="stack-bar" style="--lvl: 75%"></div>
+          </div>
+          <div class="stack-cell">
+            <span class="corner-mark">B.06</span>
+            <div class="stack-meta">DOCS</div>
+            <div class="stack-name">BBCode / Nexus pages</div>
+            <div class="stack-bar" style="--lvl: 88%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- c: tools / libs -->
+      <div class="stack-group reveal">
+        <div class="group-head">
+          <span class="gnum">C //</span>
+          <span class="gname">tools &amp; libraries</span>
+          <span class="gdesc">— the off-hours laboratory</span>
+        </div>
+        <div class="stack-grid">
+          <div class="stack-cell feature">
+            <span class="corner-mark">C.01</span>
+            <div class="stack-meta">PROCEDURAL GENERATION</div>
+            <div class="stack-name">Voronoi · Noise · PRNG</div>
+            <div
+              class="stack-meta"
+              style="margin-top: 8px; color: var(--ink-dim)"
+            >
+              Maps, terrain, galaxies, names. Deterministic, seedable,
+              cache-friendly.
+            </div>
+            <div class="stack-bar" style="--lvl: 90%"></div>
+          </div>
+          <div class="stack-cell feature">
+            <span class="corner-mark">C.02</span>
+            <div class="stack-meta">SCRIPTING / AUTOMATION</div>
+            <div class="stack-name">Python / PyQt6</div>
+            <div
+              class="stack-meta"
+              style="margin-top: 8px; color: var(--ink-dim)"
+            >
+              Network monitors, image generation (Pillow), InDesign tooling,
+              batch utilities.
+            </div>
+            <div class="stack-bar" style="--lvl: 80%"></div>
+          </div>
+
+          <div class="stack-cell">
+            <span class="corner-mark">C.03</span>
+            <div class="stack-meta">GRAPHICS</div>
+            <div class="stack-name">Canvas / WebGL</div>
+            <div class="stack-bar" style="--lvl: 76%"></div>
+          </div>
+          <div class="stack-cell">
+            <span class="corner-mark">C.04</span>
+            <div class="stack-meta">PERF</div>
+            <div class="stack-name">Web Workers / LOD</div>
+            <div class="stack-bar" style="--lvl: 78%"></div>
+          </div>
+          <div class="stack-cell">
+            <span class="corner-mark">C.05</span>
+            <div class="stack-meta">IDE</div>
+            <div class="stack-name">JetBrains Rider</div>
+            <div class="stack-bar" style="--lvl: 95%"></div>
+          </div>
+          <div class="stack-cell">
+            <span class="corner-mark">C.06</span>
+            <div class="stack-meta">SHIPPING</div>
+            <div class="stack-name">Open-source on GitHub</div>
+            <div class="stack-bar" style="--lvl: 85%"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- archive / projects -->
+    <section id="archive">
+      <div class="sec-head reveal">
+        <span class="num">// 03</span>
+        <h2>selected_archive</h2>
+        <span class="meta">extract · 10 of 40+</span>
+      </div>
+
+      <div class="reveal">
+        <div class="tab-bar" role="tablist">
+          <button class="tab-btn active" data-tab="web" role="tab">
+            <span>web &amp; cms</span><span class="tab-count">04</span>
+          </button>
+          <button class="tab-btn" data-tab="mods" role="tab">
+            <span>mods &amp; games</span><span class="tab-count">03</span>
+          </button>
+          <button class="tab-btn" data-tab="tools" role="tab">
+            <span>tools &amp; libraries</span><span class="tab-count">03</span>
+          </button>
+        </div>
+
+        <!-- Status legend -->
+        <div class="status-legend">
+          <span class="legend-label">// status key</span>
+          <span class="status-badge" data-state="live"
+            ><span class="led"></span>live</span
+          >
+          <span class="legend-text">— shipped &amp; published</span>
+          <span class="status-badge" data-state="dev"
+            ><span class="led"></span>in dev</span
+          >
+          <span class="legend-text">— active development, not yet shipped</span>
+        </div>
+
+        <!-- web tab -->
+        <div class="projects tab-panel active" data-panel="web">
+          <a class="project" data-status="dev" href="#">
+            <div class="project-head">
+              <span class="project-id"
+                >W.001 <span class="yr">/ 2026</span></span
+              >
+              <span class="status-badge" data-state="dev"
+                ><span class="led"></span>in dev</span
+              >
+            </div>
+            <div class="project-body">
+              <div class="project-title">CardForge</div>
+              <div class="project-sub">multi-tcg marketplace platform</div>
+              <div class="dev-progress">
+                <span>build phase · plugin api stabilizing</span>
+                <span class="pct">~65%</span>
+              </div>
+              <div class="project-desc">
+                WordPress-style plugin architecture supporting MTG, Pokémon, and
+                Yu-Gi-Oh. Hot-swappable game adapters, price tracking,
+                collection sync. Runs on XAMPP, ships as a contained system.
+              </div>
+              <div class="project-tags">
+                <span class="tag hl">PHP</span><span class="tag">JS</span
+                ><span class="tag">MySQL</span
+                ><span class="tag">Plugin API</span>
+              </div>
+            </div>
+          </a>
+
+          <a class="project" data-status="live" href="#">
+            <div class="project-head">
+              <span class="project-id"
+                >W.002 <span class="yr">/ 2025</span></span
+              >
+              <span class="status-badge" data-state="live"
+                ><span class="led"></span>live</span
+              >
+            </div>
+            <div class="project-body">
+              <div class="project-title">VoidForge CMS</div>
+              <div class="project-sub">custom content management</div>
+              <div class="project-desc">
+                Full-featured CMS with bulk actions, quick-edit, repeater &
+                group field types, and configurable admin columns. Built
+                ground-up for sites that outgrow WordPress without the bloat.
+              </div>
+              <div class="project-tags">
+                <span class="tag hl">PHP</span><span class="tag">CMS</span
+                ><span class="tag">Admin UI</span><span class="tag">MySQL</span>
+              </div>
+            </div>
+          </a>
+
+          <a class="project" data-status="dev" href="#">
+            <div class="project-head">
+              <span class="project-id"
+                >W.003 <span class="yr">/ 2026</span></span
+              >
+              <span class="status-badge" data-state="dev"
+                ><span class="led"></span>in dev</span
+              >
+            </div>
+            <div class="project-body">
+              <div class="project-title">TCG Vault</div>
+              <div class="project-sub">pokémon collection manager</div>
+              <div class="dev-progress">
+                <span>active build · price-history graphs in progress</span>
+                <span class="pct">~80%</span>
+              </div>
+              <div class="project-desc">
+                EN/JP card browsing, real-time price tracking, and Chart.js
+                history graphs. Personal tool turned shipping product — all the
+                data, none of the noise.
+              </div>
+              <div class="project-tags">
+                <span class="tag hl">PHP</span><span class="tag">Chart.js</span
+                ><span class="tag">REST API</span>
+              </div>
+            </div>
+          </a>
+
+          <a class="project" data-status="live" href="#">
+            <div class="project-head">
+              <span class="project-id"
+                >W.004 <span class="yr">/ 2025</span></span
+              >
+              <span class="status-badge" data-state="live"
+                ><span class="led"></span>live</span
+              >
+            </div>
+            <div class="project-body">
+              <div class="project-title">RealEstateForge</div>
+              <div class="project-sub">project management for real estate</div>
+              <div class="project-desc">
+                PHP/JS platform with interactive SVG polygon maps for plot
+                visualization and project tracking. Custom admin built around a
+                non-technical team's actual daily workflow.
+              </div>
+              <div class="project-tags">
+                <span class="tag hl">PHP</span><span class="tag">SVG</span
+                ><span class="tag">JS</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <!-- mods tab -->
+        <div class="projects tab-panel" data-panel="mods">
+          <a class="project" data-status="live" href="#">
+            <div class="project-head">
+              <span class="project-id"
+                >M.001 <span class="yr">/ 2026</span></span
+              >
+              <span class="status-badge" data-state="live"
+                ><span class="led"></span>live</span
+              >
+            </div>
+            <div class="project-body">
+              <div class="project-title">Kiroshi Deep Scan</div>
+              <div class="project-sub">cyberpunk 2077 npc backstories</div>
+              <div class="project-desc">
+                Redscript mod injecting procedurally generated NPC histories
+                into Cyberpunk's scan UI. Multiple architectural rewrites for
+                compile stability across game patches. Published under "CC."
+              </div>
+              <div class="project-tags">
+                <span class="tag hl">Redscript</span
+                ><span class="tag">CP2077</span><span class="tag">Procgen</span>
+              </div>
+            </div>
+          </a>
+
+          <a class="project" data-status="live" href="#">
+            <div class="project-head">
+              <span class="project-id"
+                >M.002 <span class="yr">/ 2026</span></span
+              >
+              <span class="status-badge" data-state="live"
+                ><span class="led"></span>live</span
+              >
+            </div>
+            <div class="project-body">
+              <div class="project-title">Traffic Unjammed AI</div>
+              <div class="project-sub">cyberpunk 2077 traffic fix</div>
+              <div class="project-desc">
+                NPC traffic behavior overhaul with retry/backoff logic to
+                prevent gridlock. Solves a longstanding base-game issue without
+                breaking save compatibility or other mods.
+              </div>
+              <div class="project-tags">
+                <span class="tag hl">Redscript</span
+                ><span class="tag">CP2077</span><span class="tag">AI fix</span>
+              </div>
+            </div>
+          </a>
+
+          <a class="project" data-status="live" href="#">
+            <div class="project-head">
+              <span class="project-id"
+                >M.003 <span class="yr">/ 2025</span></span
+              >
+              <span class="status-badge" data-state="live"
+                ><span class="led"></span>live</span
+              >
+            </div>
+            <div class="project-body">
+              <div class="project-title">Bannerlord Random Events</div>
+              <div class="project-sub">m&amp;b ii event framework</div>
+              <div class="project-desc">
+                C# framework for Mount &amp; Blade II adding configurable,
+                weighted random events tied to player state. Clean module
+                boundaries so other modders can extend without forking.
+              </div>
+              <div class="project-tags">
+                <span class="tag hl">C#</span><span class="tag">.NET</span
+                ><span class="tag">Bannerlord</span>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <!-- tools tab -->
+        <div class="projects tab-panel" data-panel="tools">
+          <a class="project" data-status="live" href="#">
+            <div class="project-head">
+              <span class="project-id"
+                >T.001 <span class="yr">/ 2025</span></span
+              >
+              <span class="status-badge" data-state="live"
+                ><span class="led"></span>live</span
+              >
+            </div>
+            <div class="project-body">
+              <div class="project-title">RealmForge</div>
+              <div class="project-sub">procedural fantasy cartographer</div>
+              <div class="project-desc">
+                Voronoi-driven world generator with procedural rivers, kingdom
+                hierarchies, multi-cultural name engines, and LOD-optimized
+                rendering via Web Workers. Cartographic UI rendered entirely in
+                vanilla JS.
+              </div>
+              <div class="project-tags">
+                <span class="tag hl">JS</span><span class="tag">Voronoi</span
+                ><span class="tag">Web Workers</span
+                ><span class="tag">SVG</span>
+              </div>
+            </div>
+          </a>
+
+          <a class="project" data-status="live" href="#">
+            <div class="project-head">
+              <span class="project-id"
+                >T.002 <span class="yr">/ 2025</span></span
+              >
+              <span class="status-badge" data-state="live"
+                ><span class="led"></span>live</span
+              >
+            </div>
+            <div class="project-body">
+              <div class="project-title">SeedForge</div>
+              <div class="project-sub">seedable prng library v1.1</div>
+              <div class="project-desc">
+                Open-source JavaScript PRNG with statistical distributions,
+                multi-octave noise generators, and deterministic seeding for
+                procedural content. Zero dependencies, drop-in ESM module.
+              </div>
+              <div class="project-tags">
+                <span class="tag hl">JS</span><span class="tag">PRNG</span
+                ><span class="tag">Open Source</span
+                ><span class="tag">ESM</span>
+              </div>
+            </div>
+          </a>
+
+          <a class="project" data-status="dev" href="#">
+            <div class="project-head">
+              <span class="project-id"
+                >T.003 <span class="yr">/ 2025</span></span
+              >
+              <span class="status-badge" data-state="dev"
+                ><span class="led"></span>in dev</span
+              >
+            </div>
+            <div class="project-body">
+              <div class="project-title">Galaxy Simulator</div>
+              <div class="project-sub">stellar systems &amp; ESI</div>
+              <div class="dev-progress">
+                <span>prototype · navigation &amp; ESI scoring online</span>
+                <span class="pct">~50%</span>
+              </div>
+              <div class="project-desc">
+                Hierarchical navigation through procedurally generated galaxies.
+                Binary/trinary star systems, planetary bodies, ESI scoring for
+                habitability. Pure JS, no engine.
+              </div>
+              <div class="project-tags">
+                <span class="tag hl">JS</span><span class="tag">Astronomy</span
+                ><span class="tag">Procgen</span>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- dossier -->
+    <section id="dossier">
+      <div class="sec-head reveal">
+        <span class="num">// 04</span>
+        <h2>operator_dossier</h2>
+        <span class="meta">classification: open</span>
+      </div>
+
+      <div class="about-grid">
+        <div class="about-left reveal">
+          <div class="panel">
+            <div class="panel-header">
+              <span><span class="id">∎</span> ID_CARD.dat</span>
+              <span class="dots"><span class="on"></span></span>
+            </div>
+            <div class="id-card">
+              <h3>// vitals</h3>
+              <dl>
+                <dt>Callsign</dt>
+                <dd>Adrian / "CC"</dd>
+                <dt>Sector</dt>
+                <dd>Skien, NO</dd>
+                <dt>Field</dt>
+                <dd>Full-stack web</dd>
+                <dt>Status</dt>
+                <dd><span class="pulse"></span>Open to work</dd>
+                <dt>Schedule</dt>
+                <dd>Mon — Fri</dd>
+                <dt>Languages</dt>
+                <dd>NO · EN · ES · DE</dd>
+                <dt>Range</dt>
+                <dd>Kragerø → Tønsberg</dd>
+                <dt>Specialty</dt>
+                <dd>Procedural systems</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+
+        <div class="about-right reveal">
+          <p>
+            I build software for the long haul — modular code that other
+            developers can pick up without a manual, on stacks that won't snap
+            when the framework-of-the-month gets deprecated.
+          </p>
+          <p>
+            Eight years as a full-stack developer at Wera AS in Porsgrunn —
+            building WordPress sites with custom themes and plugins, developing
+            API solutions, supporting clients. Before that, two years running my
+            own freelance shop in Skien. Computer Science degree from USN Bø.
+          </p>
+          <p>
+            Outside of work I write game mods under the handle "CC" — Cyberpunk
+            2077, Bannerlord, Bethesda titles — and build procedural generation
+            tools: fantasy maps, galaxy simulators, terrain shaders. The
+            throughline is the same either way: build the thing properly, ship
+            it, document it, move on.
+          </p>
+          <p>Now between roles and looking for the next one.</p>
+          <div class="sig">
+            <span>— A. / OPERATOR 0xA1</span>
+            <span>SKIEN · 59.21°N</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- extended dossier — timeline + principles + env -->
+      <div class="dossier-extended reveal">
+        <!-- trajectory / left col -->
+        <div>
+          <div class="dossier-block-head">
+            <span class="dnum">04.A //</span>
+            <span class="dname">trajectory</span>
+            <span class="dmeta">10 yrs · since 2016</span>
+          </div>
+          <div class="timeline">
+            <div class="timeline-item">
+              <div class="timeline-period">2026 — Present</div>
+              <div class="timeline-role">Open to Work</div>
+              <div class="timeline-context">Skien · seeking full-time role</div>
+              <div class="timeline-desc">
+                Recently departed Wera AS after 8 years. Available immediately
+                for full-stack web roles in Telemark / Vestfold. Continuing
+                personal projects, open-source work, and mod development in the
+                meantime.
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-period">02/2018 — 2026</div>
+              <div class="timeline-role">Full-Stack Web Developer</div>
+              <div class="timeline-context">Wera AS · Porsgrunn, Norway</div>
+              <div class="timeline-desc">
+                Eight years building production WordPress sites with custom
+                themes and plugins. API solution development, customer support,
+                and full-stack ownership of client projects. The bulk of my
+                professional WordPress, PHP, and JS experience was forged here.
+              </div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-period">01/2016 — 12/2017</div>
+              <div class="timeline-role">Freelance Web Developer</div>
+              <div class="timeline-context">Self-employed · Skien, Norway</div>
+              <div class="timeline-desc">
+                Ran my own business alongside an established company, building
+                WordPress sites for smaller businesses. Handled everything
+                end-to-end: client contact, project management, development,
+                deployment.
+              </div>
+            </div>
+            <div class="timeline-item muted">
+              <div class="timeline-period">08/2012 — 08/2016</div>
+              <div class="timeline-role">Bachelor of Computer Science</div>
+              <div class="timeline-context">USN Bø · Telemark</div>
+              <div class="timeline-desc">
+                Computer Science degree from the University of South-Eastern
+                Norway, Bø campus. Foundational coursework alongside hands-on
+                programming and side projects in modding and web development.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- principles + env / right col -->
+        <div class="dossier-rightcol">
+          <div>
+            <div class="dossier-block-head">
+              <span class="dnum">04.B //</span>
+              <span class="dname">operating_principles</span>
+              <span class="dmeta">how i work</span>
+            </div>
+            <div class="principles">
+              <div class="principle">
+                <div class="principle-num">P.01</div>
+                <div class="principle-text">
+                  <strong>Modular over monolithic.</strong>
+                  <em
+                    >If a file grows past a screen, it probably wants to be two
+                    files.</em
+                  >
+                </div>
+              </div>
+              <div class="principle">
+                <div class="principle-num">P.02</div>
+                <div class="principle-text">
+                  <strong>Ship, then refine.</strong>
+                  <em
+                    >A working v1 in production beats a perfect v3 in a
+                    branch.</em
+                  >
+                </div>
+              </div>
+              <div class="principle">
+                <div class="principle-num">P.03</div>
+                <div class="principle-text">
+                  <strong>Vanilla first.</strong>
+                  <em
+                    >Reach for a framework when there's a real reason — not
+                    because it's Tuesday.</em
+                  >
+                </div>
+              </div>
+              <div class="principle">
+                <div class="principle-num">P.04</div>
+                <div class="principle-text">
+                  <strong>Document for the next person.</strong>
+                  <em
+                    >Code is read 10× more than it's written. Comments and
+                    READMEs are part of the deliverable.</em
+                  >
+                </div>
+              </div>
+              <div class="principle">
+                <div class="principle-num">P.05</div>
+                <div class="principle-text">
+                  <strong>Boring tech, interesting solutions.</strong>
+                  <em
+                    >PHP, MySQL, vanilla JS — the unglamorous stack still ships
+                    the most software.</em
+                  >
+                </div>
+              </div>
+              <div class="principle">
+                <div class="principle-num">P.06</div>
+                <div class="principle-text">
+                  <strong>Build with the admin in mind.</strong>
+                  <em
+                    >The end user sees the frontend. The team using it every day
+                    deserves a real UI too.</em
+                  >
+                </div>
+              </div>
+              <div class="principle">
+                <div class="principle-num">P.07</div>
+                <div class="principle-text">
+                  <strong>AI is a tool, not a workhorse.</strong>
+                  <em
+                    >I use it for what it's good at — boilerplate,
+                    rubber-ducking, lookups. The architecture, the decisions,
+                    and the responsibility stay with me.</em
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="dossier-block-head">
+              <span class="dnum">04.C //</span>
+              <span class="dname">environment</span>
+              <span class="dmeta">tools &amp; fit</span>
+            </div>
+            <div class="env-grid">
+              <div class="env-block">
+                <div class="env-label">// daily_environment</div>
+                <div class="env-list">
+                  <div class="env-item">
+                    JetBrains Rider <span class="em">primary IDE</span>
+                  </div>
+                  <div class="env-item">
+                    XAMPP <span class="em">local stack</span>
+                  </div>
+                  <div class="env-item">
+                    Git + GitHub <span class="em">version control</span>
+                  </div>
+                  <div class="env-item">
+                    Windows <span class="em">development OS</span>
+                  </div>
+                  <div class="env-item">
+                    Figma + InDesign <span class="em">design &amp; prep</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="env-block">
+                <div class="env-label">// outside_the_office</div>
+                <div class="env-list">
+                  <div class="env-item">
+                    Game modding
+                    <span class="em">CP2077 · Bannerlord · Bethesda</span>
+                  </div>
+                  <div class="env-item">
+                    Procedural generation
+                    <span class="em">terrain · galaxies · names</span>
+                  </div>
+                  <div class="env-item">
+                    Open-source libraries
+                    <span class="em">SeedForge &amp; tooling</span>
+                  </div>
+                  <div class="env-item">
+                    Pokémon TCG
+                    <span class="em">collecting &amp; valuation</span>
+                  </div>
+                  <div class="env-item">
+                    Sci-fi &amp; design aesthetics
+                    <span class="em">NASA-punk · retro-terminal</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="env-block">
+                <div class="env-label">// what_i_bring</div>
+                <div class="env-list">
+                  <div class="env-item">
+                    Senior WordPress fluency <span class="em">10+ years</span>
+                  </div>
+                  <div class="env-item">
+                    Full-stack ownership <span class="em">DB → admin → UI</span>
+                  </div>
+                  <div class="env-item">
+                    Self-direction <span class="em">independent shipper</span>
+                  </div>
+                  <div class="env-item">
+                    Architecture instinct
+                    <span class="em">modular by default</span>
+                  </div>
+                  <div class="env-item">
+                    Documentation discipline
+                    <span class="em">READMEs, BBCode, specs</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="env-block">
+                <div class="env-label">// looking_for</div>
+                <div class="env-list">
+                  <div class="env-item">
+                    Full-time employment <span class="em">fast, perm</span>
+                  </div>
+                  <div class="env-item">
+                    WordPress / PHP roles <span class="em">primary fit</span>
+                  </div>
+                  <div class="env-item">
+                    Full-stack JS / CMS work
+                    <span class="em">also welcome</span>
+                  </div>
+                  <div class="env-item">
+                    Telemark + Vestfold region
+                    <span class="em">Kragerø → Tønsberg</span>
+                  </div>
+                  <div class="env-item">
+                    Remote within Norway <span class="em">also fine</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- contact -->
+    <section id="transmit">
+      <div class="sec-head reveal">
+        <span class="num">// 05</span>
+        <h2>open_channel</h2>
+        <span class="meta">latency: ~24h</span>
+      </div>
+
+      <div class="contact-wrap reveal">
+        <div class="eyebrow" style="justify-content: center; margin-bottom: 0">
+          // transmission ready
+        </div>
+        <div class="signal-text">
+          <a href="mailto:adrian.thomassen92@gmail.com"
+            >&gt; hailing.frequency</a
+          >
+        </div>
+        <p
+          style="
+            font-family: &quot;Instrument Serif&quot;, serif;
+            font-style: italic;
+            font-size: 18px;
+            color: var(--ink-dim);
+            max-width: 560px;
+            margin: 0 auto;
+          "
+        >
+          Open to full-time roles within commuting range — Kragerø, Skien, Bø i
+          Telemark, Larvik, Sandefjord, Tønsberg. Remote-friendly within Norway.
+          Send a message.
+        </p>
+
+        <div class="frequencies">
+          <div class="freq">
+            <div class="lbl">// github</div>
+            <a
+              href="https://github.com/ClearanceClarence"
+              target="_blank"
+              rel="noopener"
+              >ClearanceClarence</a
+            >
+          </div>
+          <div class="freq">
+            <div class="lbl">// linkedin</div>
+            <a
+              href="https://www.linkedin.com/in/adrian-thomassen-55778018a/"
+              target="_blank"
+              rel="noopener"
+              >adrian-thomassen</a
+            >
+          </div>
+          <div class="freq">
+            <div class="lbl">// phone</div>
+            <a href="tel:+4740761268">+47 407 61 268</a>
+          </div>
+          <div class="freq">
+            <div class="lbl">// direct</div>
+            <a href="mailto:adrian.thomassen92@gmail.com"
+              >a.thomassen [at] gmail</a
+            >
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="footer-inner">
+        <span>© 26.04 — ADRIAN / OPERATOR 0xA1</span>
+        <span>BUILT IN VANILLA · NO FRAMEWORKS</span>
+        <span>SKIEN · 59.21°N 9.61°E</span>
+      </div>
+    </footer>
+
+    <script>
+      // oslo clock — Intl handles the CET/CEST switch for us
+      const $clock = document.getElementById("clock");
+      const tick = () => {
+        const d = new Date();
+        const t = new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Europe/Oslo",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        }).formatToParts(d);
+        const get = (k) => t.find((p) => p.type === k).value;
+        // grab CET/CEST label off a separate format call (cheap enough)
+        const tz = new Intl.DateTimeFormat("en", {
+          timeZone: "Europe/Oslo",
+          timeZoneName: "short",
+        })
+          .formatToParts(d)
+          .find((p) => p.type === "timeZoneName").value;
+        $clock.textContent = `${get("hour")}:${get("minute")}:${get("second")} ${tz}`;
+      };
+      tick();
+      setInterval(tick, 1000);
+
+      // scroll reveal — one-shot, unobserve when done
+      const reveal = new IntersectionObserver(
+        (rows) => {
+          for (const row of rows) {
+            if (!row.isIntersecting) continue;
+            row.target.classList.add("visible");
+            reveal.unobserve(row.target);
+          }
+        },
+        { threshold: 0.12 },
+      );
+      document.querySelectorAll(".reveal").forEach((el) => reveal.observe(el));
+
+      function countUp(el) {
+        const goal = parseInt(el.dataset.count, 10);
+        if (isNaN(goal)) return;
+        let n = 0;
+        const inc = Math.max(1, Math.ceil(goal / 30));
+        const id = setInterval(() => {
+          n += inc;
+          if (n >= goal) {
+            n = goal;
+            clearInterval(id);
+          }
+          el.textContent = String(n).padStart(2, "0");
+        }, 40);
+      }
+      const counters = new IntersectionObserver(
+        (rows) => {
+          rows.forEach((r) => {
+            if (r.isIntersecting) {
+              countUp(r.target);
+              counters.unobserve(r.target);
+            }
+          });
+        },
+        { threshold: 0.5 },
+      );
+      document
+        .querySelectorAll("[data-count]")
+        .forEach((el) => counters.observe(el));
+
+      const navLinks = document.querySelectorAll("nav a");
+      const navObs = new IntersectionObserver(
+        (rows) => {
+          rows.forEach((r) => {
+            if (!r.isIntersecting) return;
+            const id = "#" + r.target.id;
+            navLinks.forEach((a) =>
+              a.classList.toggle("active", a.getAttribute("href") === id),
+            );
+          });
+        },
+        { threshold: 0.4 },
+      );
+      document
+        .querySelectorAll("section[id]")
+        .forEach((s) => navObs.observe(s));
+
+      const tabs = document.querySelectorAll(".tab-btn");
+      const panels = document.querySelectorAll(".tab-panel");
+      tabs.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const t = btn.dataset.tab;
+          tabs.forEach((b) => b.classList.toggle("active", b === btn));
+          panels.forEach((p) =>
+            p.classList.toggle("active", p.dataset.panel === t),
+          );
+        });
+      });
+    </script>
+  </body>
+</html>
